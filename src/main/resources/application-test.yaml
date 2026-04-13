@@ -3,11 +3,9 @@ spring:
     url: jdbc:h2:mem:devops_demo;MODE=MySQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
     username: root
     password: 123456
-  jpa:
-    hibernate:
-      ddl-auto: create-drop
-    open-in-view: false
   sql:
     init:
-      mode: never
+      mode: always
+      schema-locations: classpath:schema.sql
+      data-locations: classpath:data.sql
 

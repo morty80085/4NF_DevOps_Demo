@@ -150,12 +150,12 @@ jobs:
       - name: Health and API smoke test
         run: |
           for i in {1..30}; do
-            if curl -fsS http://127.0.0.1:8080/actuator/health > /dev/null; then
+            if curl -fsS http://127.0.0.1:8080/api/tasks > /dev/null; then
               break
             fi
             sleep 2
           done
-          curl -fsS http://127.0.0.1:8080/actuator/health
+          curl -fsS http://127.0.0.1:8080/api/tasks
           curl -fsS -X POST http://127.0.0.1:8080/api/tasks \
             -H "Content-Type: application/json" \
             -d '{"title":"cd smoke"}'

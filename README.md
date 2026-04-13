@@ -31,7 +31,7 @@
 3. `cd-smoke-test` 阶段（非 PR）：
     - 下载 `app-jar`。
     - 启动应用并连接 MySQL。
-    - 访问 `/actuator/health`。
+    - 访问 `/api/tasks` 验证服务可用。
     - 调用 `/api/tasks` 的 POST/GET 做端到端冒烟校验。
 4. `deploy` 阶段（非 PR）：
     - 下载 Jar 并统一命名为 `app.jar`。
