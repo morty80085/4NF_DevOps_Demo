@@ -6,6 +6,17 @@
 
 ![CI/CD Workflow Main](https://github.com/BUAA2026SE-404NotFound/4NF_DevOps_Demo/actions/workflows/ci-cd-demo.yml/badge.svg?branch=main)
 
+
+## CI/CD 触发记录
+
+- [ ] CTS-23373
+- [x] kurrna
+- [ ] morty80085
+- [ ] Noel261
+- [ ] REROSAMA
+- [ ] wangsu2006
+- [ ] xx6677-c
+
 ## 单次 CI/CD 触发全过程
 
 一次完整触发（例如 `push main` 或 `workflow_dispatch`）按以下顺序执行：
@@ -266,16 +277,4 @@ jobs:
         run: |
           echo "SERVER_HOST / SERVER_USER / SERVER_PASSWORD 未配置，已跳过自动部署。"
 ```
-
-## 7 人触发 CI/CD 记录表
-
-| 序号 | 成员 GitHub ID | 触发方式（push/dispatch） | Actions Run 链接 | CI 结果 | CD 结果 | 部署结果 | 备注 |
-|----|--------------|---------------------|----------------|-------|-------|------|----|
-| 1  |              |                     |                |       |       |      |    |
-| 2  |              |                     |                |       |       |      |    |
-| 3  |              |                     |                |       |       |      |    |
-| 4  |              |                     |                |       |       |      |    |
-| 5  |              |                     |                |       |       |      |    |
-| 6  |              |                     |                |       |       |      |    |
-| 7  |              |                     |                |       |       |      |    |
 
