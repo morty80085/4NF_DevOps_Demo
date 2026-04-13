@@ -21,7 +21,7 @@ on:
           - member-7
 
 jobs:
-  build-and-test:
+  ci:
     runs-on: ubuntu-latest
 
     services:
@@ -30,18 +30,17 @@ jobs:
         ports:
           - 3306:3306
         env:
-          MYSQL_ROOT_PASSWORD: root
+          MYSQL_ROOT_PASSWORD: 123456
           MYSQL_DATABASE: devops_demo
-          MYSQL_USER: root
-          MYSQL_PASSWORD: 123456
         options: >-
-          --health-cmd="mysqladmin ping -h 127.0.0.1 -u$MYSQL_USER -p$MYSQL_PASSWORD"
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -p123456"
           --health-interval=10s
           --health-timeout=5s
           --health-retries=10
 
     env:
       RUN_CI_MYSQL_TEST: true
+      SPRING_PROFILES_ACTIVE: ci
 
     steps:
       - name: Checkout source
@@ -79,4 +78,142 @@ jobs:
 
       - name: Build jar
         run: ./mvnw -B -DskipTests package
+
+      - name: Upload jar artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-jar
+          path: target/*.jar
+          if-no-files-found: error
+
+  cd-smoke-test:
+    if: github.event_name != 'pull_request'
+    needs: ci
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.4
+        ports:
+          - 3306:3306
+        env:
+          MYSQL_ROOT_PASSWORD: 123456
+          MYSQL_DATABASE: devops_demo
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -p123456"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    env:
+      SPRING_PROFILES_ACTIVE: ci
+
+    steps:
+      - name: Download jar artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: app-jar
+          path: dist
+
+      - name: Select runnable jar
+        run: |
+          APP_JAR=$(find dist -name "*.jar" | grep -v "original" | head -n 1)
+          if [ -z "$APP_JAR" ]; then
+            echo "No runnable jar found"
+            exit 1
+          fi
+          echo "APP_JAR=$APP_JAR" >> $GITHUB_ENV
+
+      - name: Wait for MySQL
+        run: |
+          for i in {1..30}; do
+            if mysql -h127.0.0.1 -P3306 -uroot -p123456 -e "SELECT 1" devops_demo; then
+              echo "MySQL is ready"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "MySQL did not become ready in time"
+          exit 1
+
+      - name: Start app
+        run: |
+          java -jar "$APP_JAR" > app.log 2>&1 &
+          echo $! > app.pid
+
+      - name: Health and API smoke test
+        run: |
+          for i in {1..30}; do
+            if curl -fsS http://127.0.0.1:8080/actuator/health > /dev/null; then
+              break
+            fi
+            sleep 2
+          done
+          curl -fsS http://127.0.0.1:8080/actuator/health
+          curl -fsS -X POST http://127.0.0.1:8080/api/tasks \
+            -H "Content-Type: application/json" \
+            -d '{"title":"cd smoke"}'
+          curl -fsS http://127.0.0.1:8080/api/tasks
+
+      - name: Stop app and print logs
+        if: always()
+        run: |
+          if [ -f app.pid ]; then kill $(cat app.pid) || true; fi
+          echo "----- app.log -----"
+          cat app.log || true
+
+  deploy:
+    if: github.event_name != 'pull_request'
+    needs: cd-smoke-test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download jar artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: app-jar
+          path: dist
+
+      - name: Prepare deployment jar
+        run: |
+          APP_JAR=$(find dist -name "*.jar" | grep -v "original" | head -n 1)
+          if [ -z "$APP_JAR" ]; then
+            echo "No runnable jar found"
+            exit 1
+          fi
+          cp "$APP_JAR" dist/app.jar
+
+      - name: Upload jar to Tencent Cloud server
+        if: ${{ secrets.SERVER_HOST != '' && secrets.SERVER_USER != '' && secrets.SERVER_PASSWORD != '' }}
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          password: ${{ secrets.SERVER_PASSWORD }}
+          source: "dist/app.jar"
+          target: "~/apps/devops-demo"
+
+      - name: Restart service on Tencent Cloud server
+        if: ${{ secrets.SERVER_HOST != '' && secrets.SERVER_USER != '' && secrets.SERVER_PASSWORD != '' }}
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          password: ${{ secrets.SERVER_PASSWORD }}
+          script: |
+            mkdir -p ~/apps/devops-demo
+            cd ~/apps/devops-demo
+            if [ -f app.pid ] && kill -0 "$(cat app.pid)" 2>/dev/null; then
+              kill "$(cat app.pid)" || true
+              sleep 2
+            fi
+            nohup java -jar app.jar > app.log 2>&1 &
+            echo $! > app.pid
+            sleep 5
+            ps -p "$(cat app.pid)" -f || true
+
+      - name: Deploy skipped reminder
+        if: ${{ !(secrets.SERVER_HOST != '' && secrets.SERVER_USER != '' && secrets.SERVER_PASSWORD != '') }}
+        run: |
+          echo "SERVER_HOST / SERVER_USER / SERVER_PASSWORD 未配置，已跳过自动部署。"
 
