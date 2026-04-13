@@ -1,11 +1,10 @@
 # Spring Boot + MySQL CI/CD Demo
 
-本仓库用于完成 7 人协作的 CI/CD 作业，核心工作流文件为 [ci-cd-demo.yml](.github/workflows/ci-cd-demo.yml)。
+本仓库用于测试 7 人协作的 CI/CD，核心工作流文件为 [ci-demo.yml](.github/workflows/ci-demo.yml) 和 [cd-demo.yml](.github/workflows/cd-demo.yml)。
 
-![CI/CD Workflow](https://github.com/BUAA2026SE-404NotFound/4NF_DevOps_Demo/actions/workflows/ci-cd-demo.yml/badge.svg)
+![CI Workflow](https://github.com/BUAA2026SE-404NotFound/4NF_DevOps_Demo/actions/workflows/ci-demo.yml/badge.svg)
 
-![CI/CD Workflow Main](https://github.com/BUAA2026SE-404NotFound/4NF_DevOps_Demo/actions/workflows/ci-cd-demo.yml/badge.svg?branch=main)
-
+![CD Workflow](https://github.com/BUAA2026SE-404NotFound/4NF_DevOps_Demo/actions/workflows/cd-demo.yml/badge.svg)
 
 ## CI/CD 触发记录
 
@@ -19,7 +18,7 @@
 
 ## 单次 CI/CD 触发全过程
 
-一次完整触发（例如 `push main` 或 `workflow_dispatch`）按以下顺序执行：
+一次完整触发（例如 `push master` 或 `workflow_dispatch`）按以下顺序执行：
 
 1. 触发工作流：`pull_request` / `push` / `workflow_dispatch`。
 2. `ci` 阶段：
@@ -41,8 +40,8 @@
 ## 工作流配置说明
 
 - 触发条件：
-    - `pull_request` 到 `main`：执行 `ci`。
-    - `push` 到 `main`：执行 `ci -> cd-smoke-test -> deploy`。
+    - `pull_request` 到 `master`：执行 `ci`。
+    - `push` 到 `master`：执行 `ci -> cd-smoke-test -> deploy`。
     - `workflow_dispatch`：可手动选择成员槽位触发。
 - 关键环境变量：
     - `RUN_CI_MYSQL_TEST=true`：启用 MySQL CI 冒烟测试。
