@@ -2,9 +2,9 @@ name: CI/CD Demo
 
 on:
   pull_request:
-    branches: [ "main" ]
+    branches: [ "master" ]
   push:
-    branches: [ "main" ]
+    branches: [ "master" ]
   workflow_dispatch:
     inputs:
       member:
@@ -12,13 +12,13 @@ on:
         required: true
         type: choice
         options:
-          - member-1
-          - member-2
-          - member-3
-          - member-4
-          - member-5
-          - member-6
-          - member-7
+          - CTS-23373
+          - kurrna
+          - morty80085
+          - Noel261
+          - REROSAMA
+          - wangsu2006
+          - xx6677-c
 
 jobs:
   ci:
