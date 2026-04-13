@@ -184,49 +184,71 @@ jobs:
           distribution: temurin
           java-version: '21'
 
-      - name: Download jar artifact
-        uses: actions/download-artifact@v4
+      - name: Resolve artifact download URL
+        id: artifact
+        uses: actions/github-script@v7
         with:
-          name: app-jar
-          path: dist
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const { data } = await github.rest.actions.listWorkflowRunArtifacts({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              run_id: context.runId,
+            });
 
-      - name: Prepare deployment jar
-        run: |
-          APP_JAR=$(find dist -name "*.jar" | grep -v "original" | head -n 1)
-          if [ -z "$APP_JAR" ]; then
-            echo "No runnable jar found"
-            exit 1
-          fi
-          cp "$APP_JAR" dist/app.jar
+            const artifact = data.artifacts.find(item => item.name === 'app-jar');
+            if (!artifact) {
+              core.setFailed('Cannot find app-jar artifact for the current run');
+              return;
+            }
 
-      - name: Upload jar to Tencent Cloud server
-        if: ${{ env.SERVER_HOST != '' && env.SERVER_USER != '' && env.SERVER_PASSWORD != '' }}
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ env.SERVER_HOST }}
-          username: ${{ env.SERVER_USER }}
-          password: ${{ env.SERVER_PASSWORD }}
-          source: "dist/app.jar"
-          target: "~/apps/devops-demo"
+            core.setOutput('url', artifact.archive_download_url);
 
-      - name: Restart service on Tencent Cloud server
+      - name: Deploy to Tencent Cloud via SSH and server-side GitHub download
         if: ${{ env.SERVER_HOST != '' && env.SERVER_USER != '' && env.SERVER_PASSWORD != '' }}
         uses: appleboy/ssh-action@v1.2.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ARTIFACT_URL: ${{ steps.artifact.outputs.url }}
         with:
           host: ${{ env.SERVER_HOST }}
           username: ${{ env.SERVER_USER }}
           password: ${{ env.SERVER_PASSWORD }}
+          envs: GITHUB_TOKEN,ARTIFACT_URL
           script: |
+            set -e
+
             mkdir -p ~/apps/devops-demo
             cd ~/apps/devops-demo
+
             if [ -f app.pid ] && kill -0 "$(cat app.pid)" 2>/dev/null; then
               kill "$(cat app.pid)" || true
               sleep 2
             fi
+
+            rm -f app.jar app-artifact.zip
+
+            curl -L \
+              -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+              -H "Accept: application/vnd.github+json" \
+              -o app-artifact.zip \
+              "${ARTIFACT_URL}"
+
+            jar xf app-artifact.zip
+
+            APP_JAR=$(find . -name "*.jar" | grep -v "original" | head -n 1)
+            if [ -z "$APP_JAR" ]; then
+              echo "No runnable jar found after extracting artifact"
+              ls -lah
+              exit 1
+            fi
+
+            mv "$APP_JAR" app.jar
             nohup java -jar app.jar > app.log 2>&1 &
             echo $! > app.pid
             sleep 5
             ps -p "$(cat app.pid)" -f || true
+            echo "✅ 部署完成"
 
       - name: Deploy skipped reminder
         if: ${{ !(env.SERVER_HOST != '' && env.SERVER_USER != '' && env.SERVER_PASSWORD != '') }}
