@@ -10,7 +10,7 @@
 
 - [x] CTS-23373
 - [x] kurrna
-- [ ] morty80085
+- [x] morty80085
 - [ ] Noel261
 - [x] REROSAMA
 - [x] wangsu2006
