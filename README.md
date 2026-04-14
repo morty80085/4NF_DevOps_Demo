@@ -14,4 +14,4 @@
 - [ ] Noel261
 - [ ] REROSAMA
 - [x] wangsu2006
-- [ ] xx6677-c
+- [x] xx6677-c
