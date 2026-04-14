@@ -13,5 +13,5 @@
 - [ ] morty80085
 - [ ] Noel261
 - [ ] REROSAMA
-- [ ] wangsu2006
+- [x] wangsu2006
 - [ ] xx6677-c
