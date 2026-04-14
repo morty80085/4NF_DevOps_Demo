@@ -12,6 +12,6 @@
 - [x] kurrna
 - [ ] morty80085
 - [ ] Noel261
-- [ ] REROSAMA
+- [x] REROSAMA
 - [x] wangsu2006
 - [ ] xx6677-c
