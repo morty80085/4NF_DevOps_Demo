@@ -8,7 +8,7 @@
 
 ## CI/CD 触发记录
 
-- [ ] CTS-23373
+- [x] CTS-23373
 - [x] kurrna
 - [ ] morty80085
 - [ ] Noel261
